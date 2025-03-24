@@ -3,7 +3,9 @@
 namespace App\Tests\Unit;
 
 use App\DTO\Board;
+use App\DTO\Values\GridBoardOutput;
 use App\DTO\Values\GridSquareValue;
+use App\Service\NonogramSolver;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -31,9 +33,32 @@ use PHPUnit\Framework\TestCase;
  */
 class BoardTest extends TestCase
 {
+    public function testBoardDrawing(): void
+    {
+        $board = new Board($this->get3x3TestData());
+        $board->updateMultipleInRow(1, 1, 3, GridSquareValue::SQUARE_FILLED);
+        $board->updateSquare(2, 1, GridSquareValue::SQUARE_IGNORED);
+        $board->updateSquare(2, 2, GridSquareValue::SQUARE_FILLED);
+        $board->updateSquare(2, 3, GridSquareValue::SQUARE_IGNORED);
+
+        $expected = '
+  ┌―――――┬―――――┬―――――┐  
+  │  ▇  │  ▇  │  ▇  │  
+  ├―――――┼―――――┼―――――┤  
+  │  ᚷ  │  ▇  │  ᚷ  │  
+  ├―――――┼―――――┼―――――┤  
+  │     │     │     │  
+  └―――――┴―――――┴―――――┘  
+';
+
+        $actual = $board->draw();
+        $this->assertSame(trim($expected), trim($actual));
+        dump($actual);
+    }
+
     public function testRowAndColumnUpdateSimultaneously(): void
     {
-        $board = new Board($this->getVeryEasyTestData());
+        $board = new Board($this->get3x3TestData());
 
         // solving row 1 should automatically update all 3 columns
         $board->updateMultipleInRow(1, 1, 3, GridSquareValue::SQUARE_FILLED);
@@ -53,9 +78,24 @@ class BoardTest extends TestCase
         ], $board->getGrid());
     }
 
-    private function getVeryEasyTestData(): string
+    public function testSolver3x3(): void
     {
-        // test data is the letter I;
+        $solver = new NonogramSolver();
+        $board = new Board($this->get3x3TestData());
+        $expected = [
+            '1' => ['1' => 1, '2' => 1, '3' => 1],
+            '2' => ['1' => 0, '2' => 1, '3' => 0],
+            '3' => ['1' => 1, '2' => 1, '3' => 1],
+        ];
+
+        $actual = $solver->solve($board);
+
+        $this->assertSame($expected, $actual);
+    }
+
+    private function get3x3TestData(): string
+    {
+        // solution:
         // ■ ■ ■
         // x ■ x
         // ■ ■ ■
@@ -63,16 +103,43 @@ class BoardTest extends TestCase
             'height' => 3,
             'width' => 3,
             'hints' => [
+                'row' => [
+                    '3',
+                    '1',
+                    '3',
+                ],
                 'column' => [
                     '1 1',
                     '3',
                     '1 1',
                 ],
+            ],
+            'data' => [],
+        ];
+
+        return json_encode($testData, JSON_THROW_ON_ERROR);
+    }
+
+    private function get5x5TestData(): string
+    {
+        // solution:
+        // ■ ■ ■
+        // 🅇 ■ 🅇
+        // ■ ■ ■
+        $testData = [
+            'height' => 3,
+            'width' => 3,
+            'hints' => [
                 'row' => [
                     '3',
                     '1',
                     '3',
-                ]
+                ],
+                'column' => [
+                    '1 1',
+                    '3',
+                    '1 1',
+                ],
             ],
             'data' => [],
         ];

@@ -2,6 +2,7 @@
 
 namespace App\DTO;
 
+use App\DTO\Values\GridBoardOutput;
 use App\DTO\Values\GridSquareValue;
 
 class Board
@@ -66,6 +67,11 @@ class Board
         return $this->columnHints;
     }
 
+    public function getSquare(int $row, int $col): GridSquareValue
+    {
+        return GridSquareValue::from($this->grid[$row][$col]);
+    }
+
     public function updateSquare(int $row, int $col, int|GridSquareValue $newValue): self
     {
         $this->rows[$row][$col] = $newValue instanceof GridSquareValue ? $newValue->value : $newValue;
@@ -104,6 +110,11 @@ class Board
         ];
 
         return json_encode($data, JSON_THROW_ON_ERROR);
+    }
+
+    public function draw(): string
+    {
+        return GridBoardOutput::drawBoard($this);
     }
 
     private function resetGrid(?int $height, ?int $width): void
