@@ -2,39 +2,18 @@
 
 namespace App\DTO;
 
+use App\DTO\Values\GridSquareValue;
+
 class Board
 {
     private int $width;
     private int $height;
-    private array $data;
+    private array $grid;
     private array $rows = [];
     private array $columns = [];
     private array $rowHints;
     private array $columnHints;
 
-    /**
-     * Example of expected input JSON
-     * {
-     *     'height': 10,
-     *     'width': 10,
-     *     'hints': {
-     *         'column': ['6', '3 2', '1 3', '4', '2', '1 4', '2 2', '4', '2 2', '5'],
-     *         'row': ['4 1 3', '2 2 4', '5 2 1', '1 2 3', '3 2', '2', '2', '2', '1', '1']
-     *     },
-     *     'data': [                // 0 = open, 1 = filled in, 2 = crossed out
-     *         '1111200000',
-     *         '1121100000',
-     *         '1111100000',
-     *         '1211200000',
-     *         '1112200000',
-     *         '1122222222',
-     *         '2222211222',
-     *         '2222211222',
-     *         '2222212222',
-     *         '2222212222'
-     *     ]
-     * }
-     */
     public function __construct(string $dataFromController)
     {
         $array = json_decode($dataFromController, true, 512, JSON_THROW_ON_ERROR);
@@ -42,19 +21,12 @@ class Board
         $this->rowHints = $array['hints']['row'];
         $this->height = $array['height'];
         $this->width = $array['width'];
-        $this->data = $array['data'] ?? [];
-        if (!$this->data || $this->data === []) {
-            $this->resetGrid();
-        }
+        $this->resetGrid($this->height, $this->width);
 
-        foreach ($this->data as $rowNum => $row) {
-            $this->rows[] = $row;
-            foreach (explode('', $row) as $colNum => $character) {
-                if (!isset($this->columns[$colNum])) {
-                    $this->columns[$colNum] = str_repeat('0', $this->height);
-                }
-
-                $this->columns[$colNum][$rowNum] = $character;
+        foreach ($array['data'] ?? [] as $rowNum => $row) {
+            $characters = explode('', $row);
+            foreach ($characters as $colNum => $character) {
+                $this->rows[$rowNum][$colNum] = (int)$character;
             }
         }
     }
@@ -69,9 +41,9 @@ class Board
         return $this->height;
     }
 
-    public function getData(): array
+    public function getGrid(): array
     {
-        return $this->data;
+        return $this->grid;
     }
 
     public function getRows(): array
@@ -94,6 +66,31 @@ class Board
         return $this->columnHints;
     }
 
+    public function updateSquare(int $row, int $col, int|GridSquareValue $newValue): self
+    {
+        $this->rows[$row][$col] = $newValue instanceof GridSquareValue ? $newValue->value : $newValue;
+
+        return $this;
+    }
+
+    public function updateMultipleInRow(int $row, int $fromCol, int $toCol, int|GridSquareValue $newValue): self
+    {
+        for ($i = $fromCol; $i <= $toCol; $i++) {
+            $this->updateSquare($row, $i, $newValue);
+        }
+
+        return $this;
+    }
+
+    public function updateMultipleInColumn(int $col, int $fromRow, int $toRow, int|GridSquareValue $newValue): self
+    {
+        for ($i = $fromRow; $i <= $toRow; $i++) {
+            $this->updateSquare($i, $col, $newValue);
+        }
+
+        return $this;
+    }
+
     public function toJson(): string
     {
         $data = [
@@ -103,16 +100,36 @@ class Board
                 'column' => $this->getColumnHints(),
                 'row' => $this->getRowHints(),
             ],
-            'data' => $this->getRows(),
+            'data' => array_map(static fn($row) => implode('', $row), $this->getGrid()),
         ];
 
         return json_encode($data, JSON_THROW_ON_ERROR);
     }
 
-    private function resetGrid(): void
+    private function resetGrid(?int $height, ?int $width): void
     {
-        for ($i = 0; $i < $this->height; $i++) {
-            $this->data[$i] = str_repeat('0', $this->width);
+        $height = $height ?? $this->height;
+        $width = $width ?? $this->width;
+        $this->rows = [];
+        $this->columns = [];
+
+        // Starting arrays at 1 so that we can use a "row-col" grid notation.
+        // As an example, let's take a 10x10 grid. The four corners in this grit will be notated as
+        // 1-1 for top left, 1-10 for top right, 10-1 for bottom left and 10-10 for bottom right.
+        for ($i = 1; $i <= $height; $i++) {
+            $this->grid[$i] = [];
+            $this->rows[$i] = [];
+
+            for ($j = 1; $j <= $width; $j++) {
+                $this->grid[$i][$j] = 0;
+
+                // explicitly set these to null first so the keys exist when turning them into pointers
+                $this->rows[$i][$j] = null;
+                $this->rows[$i][$j] =& $this->grid[$i][$j];
+
+                $this->columns[$j][$i] = null;
+                $this->columns[$j][$i] =& $this->grid[$i][$j];
+            }
         }
     }
 }
