@@ -11,18 +11,18 @@ use PHPUnit\Framework\TestCase;
 /**
  * Example of expected JSON
  * {
- *     'height': 10,
- *     'width': 10,
+ *     'height': 12,
+ *     'width': 12,
  *     'hints': {
  *         'column': ['6', '3 2', '1 3', '4', '2', '1 4', '2 2', '4', '2 2', '5'],
  *         'row': ['4 1 3', '2 2 4', '5 2 1', '1 2 3', '3 2', '2', '2', '2', '1', '1']
  *     },
- *     'data': [                // 0 = open, 1 = filled in, 2 = crossed out
- *         '1111200000',
- *         '1121100000',
- *         '1111100000',
- *         '1211200000',
- *         '1112200000',
+ *     'data': [                // 2 = open, 1 = filled in, 2 = crossed out
+ *         '1111222222',
+ *         '1121122222',
+ *         '1111122222',
+ *         '1211222222',
+ *         '1112222222',
  *         '1122222222',
  *         '2222211222',
  *         '2222211222',
@@ -35,7 +35,7 @@ class BoardTest extends TestCase
 {
     public function testBoardDrawing(): void
     {
-        $board = new Board($this->get3x3TestData());
+        $board = new Board($this->dataProvider3x3()[0][0]);
         $board->updateMultipleInRow(1, 1, 3, GridSquareValue::SQUARE_FILLED);
         $board->updateSquare(2, 1, GridSquareValue::SQUARE_IGNORED);
         $board->updateSquare(2, 2, GridSquareValue::SQUARE_FILLED);
@@ -58,7 +58,7 @@ class BoardTest extends TestCase
 
     public function testRowAndColumnUpdateSimultaneously(): void
     {
-        $board = new Board($this->get3x3TestData());
+        $board = new Board($this->dataProvider3x3()[0][0]);
 
         // solving row 1 should automatically update all 3 columns
         $board->updateMultipleInRow(1, 1, 3, GridSquareValue::SQUARE_FILLED);
@@ -78,72 +78,97 @@ class BoardTest extends TestCase
         ], $board->getGrid());
     }
 
-    public function testSolver3x3(): void
+    /**
+     * @dataProvider dataProvider3x3
+     */
+    public function testSolver3x3(string $input, array $expected): void
     {
         $solver = new NonogramSolver();
-        $board = new Board($this->get3x3TestData());
-        $expected = [
-            '1' => ['1' => 1, '2' => 1, '3' => 1],
-            '2' => ['1' => 0, '2' => 1, '3' => 0],
-            '3' => ['1' => 1, '2' => 1, '3' => 1],
-        ];
-
-        $actual = $solver->solve($board);
+        $actual = $solver->solve(new Board($input))->getGrid();
 
         $this->assertSame($expected, $actual);
     }
 
-    private function get3x3TestData(): string
+    /**
+     * @dataProvider dataProvider5x5
+     */
+    public function testSolver5x5(string $input, array $expected): void
     {
-        // solution:
-        // ■ ■ ■
-        // x ■ x
-        // ■ ■ ■
-        $testData = [
-            'height' => 3,
-            'width' => 3,
-            'hints' => [
-                'row' => [
-                    '3',
-                    '1',
-                    '3',
-                ],
-                'column' => [
-                    '1 1',
-                    '3',
-                    '1 1',
-                ],
-            ],
-            'data' => [],
-        ];
+        $solver = new NonogramSolver();
+        $actual = $solver->solve(new Board($input))->getGrid();
 
-        return json_encode($testData, JSON_THROW_ON_ERROR);
+        $this->assertSame($expected, $actual);
     }
 
-    private function get5x5TestData(): string
+    /**
+     *  ┌―――――┬―――――┬―――――┐
+     *  │  ▇  │  ▇  │  ▇  │
+     *  ├―――――┼―――――┼―――――┤
+     *  │  ᚷ  │  ▇  │  ᚷ  │
+     *  ├―――――┼―――――┼―――――┤
+     *  │  ▇  │  ▇  │  ▇  │
+     *  └―――――┴―――――┴―――――┘
+     */
+    private function dataProvider3x3(): array
     {
-        // solution:
-        // ■ ■ ■
-        // 🅇 ■ 🅇
-        // ■ ■ ■
         $testData = [
             'height' => 3,
             'width' => 3,
             'hints' => [
-                'row' => [
-                    '3',
-                    '1',
-                    '3',
-                ],
-                'column' => [
-                    '1 1',
-                    '3',
-                    '1 1',
-                ],
+                'row' => ['3', '1', '3'],
+                'column' => ['1 1', '3', '1 1'],
             ],
             'data' => [],
         ];
 
-        return json_encode($testData, JSON_THROW_ON_ERROR);
+        $solution = [
+            '1' => ['1' => 1, '2' => 1, '3' => 1],
+            '2' => ['1' => 2, '2' => 1, '3' => 2],
+            '3' => ['1' => 1, '2' => 1, '3' => 1],
+        ];
+
+        return [[
+            json_encode($testData, JSON_THROW_ON_ERROR),
+            $solution,
+        ]];
+    }
+
+    /**
+     *  ┌―――――┬―――――┬―――――┬―――――┬―――――┐
+     *  │  ▇  │  ᚷ  │  ▇  │  ᚷ  │  ▇  │
+     *  ├―――――┼―――――┼―――――┼―――――┼―――――┤
+     *  │  ᚷ  │  ▇  │  ▇  │  ▇  │  ᚷ  │
+     *  ├―――――┼―――――┼―――――┼―――――┼―――――┤
+     *  │  ▇  │  ▇  │  ▇  │  ▇  │  ▇  │
+     *  ├―――――┼―――――┼―――――┼―――――┼―――――┤
+     *  │  ᚷ  │  ▇  │  ▇  │  ▇  │  ᚷ  │
+     *  ├―――――┼―――――┼―――――┼―――――┼―――――┤
+     *  │  ▇  │  ᚷ  │  ▇  │  ᚷ  │  ▇  │
+     *  └―――――┴―――――┴―――――┴―――――┴―――――┘
+     */
+    private function dataProvider5x5(): array
+    {
+        $testData = [
+            'height' => 5,
+            'width' => 5,
+            'hints' => [
+                'row' => ['1 1 1', '3', '5', '3', '1 1 1'],
+                'column' => ['1 1 1', '3', '5', '3', '1 1 1'],
+            ],
+            'data' => [],
+        ];
+
+        $solution = [
+            '1' => ['1' => 1, '2' => 2, '3' => 1, '4' => 2, '5' => 1],
+            '2' => ['1' => 2, '2' => 1, '3' => 1, '4' => 1, '5' => 2],
+            '3' => ['1' => 1, '2' => 1, '3' => 1, '4' => 1, '5' => 1],
+            '4' => ['1' => 2, '2' => 1, '3' => 1, '4' => 1, '5' => 2],
+            '5' => ['1' => 1, '2' => 2, '3' => 1, '4' => 2, '5' => 1],
+        ];
+
+        return [[
+            json_encode($testData, JSON_THROW_ON_ERROR),
+            $solution,
+        ]];
     }
 }
