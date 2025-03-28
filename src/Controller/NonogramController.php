@@ -28,7 +28,10 @@ class NonogramController extends AbstractController
             $solvedBoard = $this->solver->solve(new Board($data));
             return new JsonResponse($solvedBoard->toJson());
         } catch (Exception) {
-            return new Response('Something went wrong trying to solve this nonogram', Response::HTTP_INTERNAL_SERVER_ERROR)
+            return new Response(
+                'Something went wrong trying to solve this nonogram',
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 }

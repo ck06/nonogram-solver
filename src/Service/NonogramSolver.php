@@ -3,14 +3,16 @@
 namespace App\Service;
 
 use App\DTO\Board;
+use App\DTO\RowOrColumn;
 use App\DTO\Solution;
-use App\DTO\Values\GridSquareValue;
+use App\DTO\Values\CellValue;
+use App\Service\NonogramSolverStrategy\StrategyCollection;
 
 class NonogramSolver
 {
     private Board $board;
 
-    public function __construct()
+    public function __construct(private StrategyCollection $strategies)
     {
     }
 
@@ -18,72 +20,68 @@ class NonogramSolver
     {
         $this->board = $board;
 
-        $this->solveGuarantees();
+        $lastSolution = null;
+        while ($this->board->isSolved() === false) {
+            // additional exit condition - board may not be solved but repeated attempts do not result in progress
+            if ($lastSolution !== null && $lastSolution === $this->board->draw()) {
+                break;
+            }
+
+            $lastSolution = $this->board->draw();
+
+            $this->tryToSolve();
+        }
 
         return $this->board;
     }
 
-    /**
-     * "Guarantees" in this case refer to any row or column that can be [partially] solved on its own.
-     * This includes stuff like...
-     * - singular or multiple hints that add up to the entire grid's height or width, instantly solving them
-     * - singular hints that are larger than half the grid's height or width, partially solving them
-     * - multiple hints that, when using them to ignore parts of the grid, lead to the above use case
-     */
-    private function solveGuarantees(): void
+    private function tryToSolve(): void
     {
-        foreach ($this->board->getRows() as $rowNum => $row) {
-            $hints = explode(' ', $this->board->getRowHints()[$rowNum]);
-            $hints = array_map(static fn($hint) => (int)$hint, $hints);
-
-            // this one includes any form of hints that solve the whole row or column with no other input needed.
-            $solutions = $this->solveGuaranteedRowOrColumnByHintAlone($hints, $this->board->getWidth());
-            if ($solutions !== []) {
-                // todo apply solution
-                dd('solutions found!', $solutions);
+        foreach ([$this->board->getRows(), $this->board->getColumns()] as $rowsOrColumns) {
+            /** @var RowOrColumn $rowOrColumn */
+            foreach ($rowsOrColumns as $rowOrColumn) {
+                $solutions = $this->strategies->tryToSolve($rowOrColumn);
+                $this->applySolutions($rowOrColumn, $solutions);
             }
+        }
+    }
 
-            // todo finish method
-            $solutions = $this->solveGuaranteedRowOrColumnAfterRemovingIgnoredSquares($row, $hints);
+    private function applySolutions(RowOrColumn $rowOrColumn, array $solutions): void
+    {
+        if ($solutions === []) {
+            return;
         }
 
-        // todo process columns
+        foreach ($solutions as $solution) {
+            for ($i = $solution->start; $i <= $solution->end; $i++) {
+                $square = &$rowOrColumn->getData()[(string)$i];
+                $square = $solution->square->value;
+            }
+        }
+
+        dump($this->board->draw());
     }
+
+    //////////////// TODO: convert all methods below here to strategies
 
     /**
      * @return array<Solution>
      */
-    private function solveGuaranteedRowOrColumnByHintAlone(array $hints, int $gridSize): array
+    private function solveGuaranteedAfterRemovingIgnored(array $rowOrColumn, array $hints): array
     {
         $solutions = [];
 
-        // on top of adding all the hint values together, we also have to add +1 for every hint past the first
-        $totalHintedLength = array_sum($hints) + count($hints) - 1;
-
-        // hint contains the entire row or column
-        if ($totalHintedLength === $gridSize) {
-            $pos = 0;
-            foreach ($hints as $length) {
-                $solutions[] = new Solution(++$pos, $pos + $length - 1, GridSquareValue::SQUARE_FILLED);
-                $pos += $length;
-
-                // add an ignore after filling if this isn't the last solution
-                if ($pos < $gridSize) {
-                    $solutions[] = new Solution($pos, $pos, GridSquareValue::SQUARE_IGNORED);
-                }
+        $filteredRowOrColumn = [];
+        foreach ($rowOrColumn as $pos => $square) {
+            if (CellValue::from($square) === CellValue::SQUARE_IGNORED) {
+                continue;
             }
 
-            return $solutions;
+            $filteredRowOrColumn[$pos] = $square;
         }
 
-        return $solutions;
-    }
+        $gridSize = count($filteredRowOrColumn);
 
-    /**
-     * @return array<Solution>
-     */
-    private function solveGuaranteedRowOrColumnAfterRemovingIgnoredSquares(array $rowOrColumn, array $hints): array
-    {
         // TODO: check if the hints solve the row or column after removing ignored cells
         // $openSequences = $this->readRowOrColumn($rowOrColumn, $hints);
         return [];
@@ -95,16 +93,16 @@ class NonogramSolver
         $sequenceStart = null;
 
         foreach ($rowOrColumn as $pos => $value) {
-            $value = GridSquareValue::from($value);
+            $value = CellValue::from($value);
 
             // finish any ongoing sequences if we hit a guaranteed ignore
-            if ($sequenceStart !== null && $value === GridSquareValue::SQUARE_IGNORED) {
+            if ($sequenceStart !== null && $value === CellValue::SQUARE_IGNORED) {
                 $openSequences[$sequenceStart] = $pos - $sequenceStart;
                 $sequenceStart = null;
             }
 
             // start a sequence if we find our first open or filled in square
-            if ($sequenceStart === null && $value !== GridSquareValue::SQUARE_IGNORED) {
+            if ($sequenceStart === null && $value !== CellValue::SQUARE_IGNORED) {
                 $sequenceStart = $pos;
             }
         }

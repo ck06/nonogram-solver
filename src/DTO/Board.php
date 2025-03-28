@@ -2,8 +2,8 @@
 
 namespace App\DTO;
 
-use App\DTO\Values\GridBoardOutput;
-use App\DTO\Values\GridSquareValue;
+use App\DTO\Values\BoardOutput;
+use App\DTO\Values\CellValue;
 
 class Board
 {
@@ -22,14 +22,32 @@ class Board
         $this->rowHints = $array['hints']['row'];
         $this->height = $array['height'];
         $this->width = $array['width'];
-        $this->resetGrid($this->height, $this->width);
+        $this->reset($this->height, $this->width);
 
         foreach ($array['data'] ?? [] as $rowNum => $row) {
             $characters = explode('', $row);
             foreach ($characters as $colNum => $character) {
-                $this->rows[$rowNum][$colNum] = (int)$character;
+                // map the inputs to our internal values
+                $mappedCharacter = (match ((int)$character) {
+                    0 => CellValue::SQUARE_OPEN,
+                    1 => CellValue::SQUARE_FILLED,
+                    2 => CellValue::SQUARE_IGNORED,
+                })->value;
+
+                $this->rows[$rowNum][$colNum] = $mappedCharacter;
             }
         }
+    }
+
+    public function isSolved(): bool
+    {
+        foreach ($this->getRows() as $row) {
+            if (!$row->isSolved()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function getWidth(): int
@@ -47,51 +65,75 @@ class Board
         return $this->grid;
     }
 
+    /**
+     * @return array<string, RowOrColumn>
+     */
     public function getRows(): array
     {
-        return $this->rows;
+        $rows = [];
+        $rowCount = count($this->rows);
+        for ($i = 1; $i <= $rowCount; $i++) {
+            $rows[] = $this->getRow($i);
+        }
+
+        return $rows;
     }
 
+    public function getRow(int|string $rowNum): RowOrColumn
+    {
+        return new RowOrColumn(
+            $this->rows[(string)$rowNum],
+            $this->rowHints[(string)$rowNum]
+        );
+    }
+
+    /**
+     * @return array<string, RowOrColumn>
+     */
     public function getColumns(): array
     {
-        return $this->columns;
+        $columns = [];
+        $columnCount = count($this->columns);
+        for ($i = 1; $i <= $columnCount; $i++) {
+            $columns[] = $this->getColumn($i);
+        }
+
+        return $columns;
     }
 
-    public function getRowHints(): array
+    public function getColumn(int|string $colNum): RowOrColumn
     {
-        return $this->rowHints;
+        return new RowOrColumn(
+            $this->columns[(string)$colNum],
+            $this->columnHints[(string)$colNum]
+        );
     }
 
-    public function getColumnHints(): array
+    public function getCell(int $row, int $col): CellValue
     {
-        return $this->columnHints;
+        return CellValue::from($this->grid[$row][$col]);
     }
 
-    public function getSquare(int $row, int $col): GridSquareValue
+    public function updateCell(int $row, int $col, int|CellValue $newValue): self
     {
-        return GridSquareValue::from($this->grid[$row][$col]);
-    }
-
-    public function updateSquare(int $row, int $col, int|GridSquareValue $newValue): self
-    {
-        $this->rows[$row][$col] = $newValue instanceof GridSquareValue ? $newValue->value : $newValue;
+        $this->rows[$row][$col] = $newValue instanceof CellValue ? $newValue->value : $newValue;
 
         return $this;
     }
 
-    public function updateMultipleInRow(int $row, int $fromCol, int $toCol, int|GridSquareValue $newValue): self
+    public function updateMultipleInRow(int $row, int $fromCol, int $toCol, int|CellValue $newValue): self
     {
         for ($i = $fromCol; $i <= $toCol; $i++) {
-            $this->updateSquare($row, $i, $newValue);
+            $this->updateCell($row, $i, $newValue);
         }
 
         return $this;
     }
 
-    public function updateMultipleInColumn(int $col, int $fromRow, int $toRow, int|GridSquareValue $newValue): self
+    public function updateMultipleInColumn(int $col, int $fromRow, int $toRow, int|CellValue $newValue): self
     {
         for ($i = $fromRow; $i <= $toRow; $i++) {
-            $this->updateSquare($i, $col, $newValue);
+            $this->updateCell($i, $col, $newValue);
         }
 
         return $this;
@@ -103,10 +145,20 @@ class Board
             'height' => $this->getHeight(),
             'width' => $this->getWidth(),
             'hints' => [
-                'column' => $this->getColumnHints(),
-                'row' => $this->getRowHints(),
+                'column' => $this->columnHints,
+                'row' => $this->rowHints,
             ],
-            'data' => array_map(static fn($row) => implode('', $row), $this->getGrid()),
+            'data' => array_map(
+                static fn($row) => implode(
+                    '',
+                    array_map(static fn($cell) => match ($cell) {
+                        CellValue::SQUARE_OPEN->value => 0,
+                        CellValue::SQUARE_FILLED->value => 1,
+                        CellValue::SQUARE_IGNORED->value => 2,
+                    }, $row),
+                ),
+                $this->getGrid(),
+            ),
         ];
 
         return json_encode($data, JSON_THROW_ON_ERROR);
@@ -114,10 +166,10 @@ class Board
 
     public function draw(): string
     {
-        return GridBoardOutput::drawBoard($this);
+        return BoardOutput::drawBoard($this);
     }
 
-    private function resetGrid(?int $height, ?int $width): void
+    private function reset(?int $height, ?int $width): void
     {
         $height = $height ?? $this->height;
         $width = $width ?? $this->width;

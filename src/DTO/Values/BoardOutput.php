@@ -4,7 +4,7 @@ namespace App\DTO\Values;
 
 use App\DTO\Board;
 
-enum GridBoardOutput: string
+enum BoardOutput: string
 {
     case OUTPUT_BORDER_VERTICAL = '  │  ';
     case OUTPUT_BORDER_HORIZONTAL = '―――――';
@@ -38,8 +38,8 @@ enum GridBoardOutput: string
 
                 // if both values are even, we divide both by 2 and output that grid value
                 if ($evenRow && $evenCol) {
-                    $canvas .= GridSquareOutput::fromGridSquareValue(
-                        $board->getSquare((int)($row / 2), (int)($col / 2))
+                    $canvas .= CellOutput::fromGridSquareValue(
+                        $board->getCell((int)($row / 2), (int)($col / 2))
                     )->value;
                 }
 

@@ -2,18 +2,18 @@
 
 namespace App\DTO;
 
-use App\DTO\Values\GridSquareValue;
+use App\DTO\Values\CellValue;
 
 /** Container DTO for the NonogramSolver */
 class Solution
 {
-    public readonly GridSquareValue $square;
+    public readonly CellValue $square;
 
     public function __construct(
         public readonly int $start,
         public readonly int $end,
-        int|GridSquareValue $value
+        int|CellValue $value
     ) {
-        $this->square = $value instanceof GridSquareValue ? $value : GridSquareValue::from($value);
+        $this->square = $value instanceof CellValue ? $value : CellValue::from($value);
     }
 }

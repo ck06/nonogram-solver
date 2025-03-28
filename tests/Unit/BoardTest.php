@@ -3,9 +3,10 @@
 namespace App\Tests\Unit;
 
 use App\DTO\Board;
-use App\DTO\Values\GridBoardOutput;
-use App\DTO\Values\GridSquareValue;
+use App\DTO\Values\CellValue;
 use App\Service\NonogramSolver;
+use App\Service\NonogramSolverStrategy\StandaloneHintStrategy;
+use App\Service\NonogramSolverStrategy\StrategyCollection;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,13 +34,24 @@ use PHPUnit\Framework\TestCase;
  */
 class BoardTest extends TestCase
 {
+    public function setUp(): void
+    {
+        $this->solver = new NonogramSolver(
+            new StrategyCollection(
+                [
+                    new StandaloneHintStrategy(),
+                ],
+            )
+        );
+    }
+
     public function testBoardDrawing(): void
     {
         $board = new Board($this->dataProvider3x3()[0][0]);
-        $board->updateMultipleInRow(1, 1, 3, GridSquareValue::SQUARE_FILLED);
-        $board->updateSquare(2, 1, GridSquareValue::SQUARE_IGNORED);
-        $board->updateSquare(2, 2, GridSquareValue::SQUARE_FILLED);
-        $board->updateSquare(2, 3, GridSquareValue::SQUARE_IGNORED);
+        $board->updateMultipleInRow(1, 1, 3, CellValue::SQUARE_FILLED);
+        $board->updateCell(2, 1, CellValue::SQUARE_IGNORED);
+        $board->updateCell(2, 2, CellValue::SQUARE_FILLED);
+        $board->updateCell(2, 3, CellValue::SQUARE_IGNORED);
 
         $expected = '
   ┌―――――┬―――――┬―――――┐  
@@ -61,16 +73,16 @@ class BoardTest extends TestCase
         $board = new Board($this->dataProvider3x3()[0][0]);
 
         // solving row 1 should automatically update all 3 columns
-        $board->updateMultipleInRow(1, 1, 3, GridSquareValue::SQUARE_FILLED);
-        $this->assertSame(['1' => 1, '2' => 1, '3' => 1], $board->getRows()[1]);
-        $this->assertSame(['1' => 1, '2' => 0, '3' => 0], $board->getColumns()[1]);
+        $board->updateMultipleInRow(1, 1, 3, CellValue::SQUARE_FILLED);
+        $this->assertSame(['1' => 1, '2' => 1, '3' => 1], $board->getRow(1)->getData());
+        $this->assertSame(['1' => 1, '2' => 0, '3' => 0], $board->getColumn(1)->getData());
 
-        $board->updateMultipleInColumn(2, 1, 3, GridSquareValue::SQUARE_FILLED);
-        $this->assertSame(['1' => 0, '2' => 1, '3' => 0], $board->getRows()[2]);
-        $this->assertSame(['1' => 1, '2' => 1, '3' => 1], $board->getColumns()[2]);
+        $board->updateMultipleInColumn(2, 1, 3, CellValue::SQUARE_FILLED);
+        $this->assertSame(['1' => 0, '2' => 1, '3' => 0], $board->getRow(2)->getData());
+        $this->assertSame(['1' => 1, '2' => 1, '3' => 1], $board->getColumn(2)->getData());
 
         // check the whole grid as well to be sure
-        $board->updateMultipleInRow(3, 1, 3, GridSquareValue::SQUARE_FILLED);
+        $board->updateMultipleInRow(3, 1, 3, CellValue::SQUARE_FILLED);
         $this->assertSame([
             '1' => ['1' => 1, '2' => 1, '3' => 1],
             '2' => ['1' => 0, '2' => 1, '3' => 0],
@@ -83,8 +95,8 @@ class BoardTest extends TestCase
      */
     public function testSolver3x3(string $input, array $expected): void
     {
-        $solver = new NonogramSolver();
-        $actual = $solver->solve(new Board($input))->getGrid();
+        $solvedBoard = $this->solver->solve(new Board($input));
+        $actual = $solvedBoard->getGrid();
 
         $this->assertSame($expected, $actual);
     }
@@ -94,8 +106,8 @@ class BoardTest extends TestCase
      */
     public function testSolver5x5(string $input, array $expected): void
     {
-        $solver = new NonogramSolver();
-        $actual = $solver->solve(new Board($input))->getGrid();
+        $solvedBoard = $this->solver->solve(new Board($input));
+        $actual = $solvedBoard->getGrid();
 
         $this->assertSame($expected, $actual);
     }
@@ -127,10 +139,12 @@ class BoardTest extends TestCase
             '3' => ['1' => 1, '2' => 1, '3' => 1],
         ];
 
-        return [[
-            json_encode($testData, JSON_THROW_ON_ERROR),
-            $solution,
-        ]];
+        return [
+            [
+                json_encode($testData, JSON_THROW_ON_ERROR),
+                $solution,
+            ]
+        ];
     }
 
     /**
@@ -166,9 +180,11 @@ class BoardTest extends TestCase
             '5' => ['1' => 1, '2' => 2, '3' => 1, '4' => 2, '5' => 1],
         ];
 
-        return [[
-            json_encode($testData, JSON_THROW_ON_ERROR),
-            $solution,
-        ]];
+        return [
+            [
+                json_encode($testData, JSON_THROW_ON_ERROR),
+                $solution,
+            ]
+        ];
     }
 }

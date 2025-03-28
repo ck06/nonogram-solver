@@ -2,7 +2,7 @@
 
 namespace App\DTO\Values;
 
-enum GridSquareValue: int
+enum CellValue: int
 {
     case SQUARE_OPEN = 0;
     case SQUARE_FILLED = 1;
