@@ -27,7 +27,7 @@ class StandaloneHintStrategy implements StrategyInterface
         return true;
     }
 
-    public function tryToSolve(RowOrColumn $rowOrColumn, array $options = []): ?array
+    public function tryToSolve(RowOrColumn $rowOrColumn, array $options = []): array
     {
         $solutions = [];
         $gridSize = count($rowOrColumn->getData());

@@ -31,7 +31,7 @@ class StrategyCollection
             }
 
             $solutions = $strategy->tryToSolve($rowOrColumn, $options);
-            if ($solutions !== null && $solutions !== []) {
+            if ($solutions !== []) {
                 return $solutions;
             }
         }

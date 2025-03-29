@@ -24,7 +24,7 @@ class StandaloneHintStrategyTest extends TestCase
         return [
             [
                 // unable to solve
-                'input' => new RowOrColumn([0, 0, 0, 0, 0], '1 2'),
+                'input' => self::GetBlankRowOrColumn(5, '1 2'),
                 'expected' => [],
             ],
             [
@@ -33,13 +33,13 @@ class StandaloneHintStrategyTest extends TestCase
                 'expected' => [],
             ],
             [
-                'input' => new RowOrColumn([0, 0, 0, 0, 0], '5'),
+                'input' => self::GetBlankRowOrColumn(5, '5'),
                 'expected' => [
                     new Solution(1, 5, CellValue::SQUARE_FILLED)
                 ],
             ],
             [
-                'input' => new RowOrColumn([0, 0, 0, 0, 0], '3 1'),
+                'input' => self::GetBlankRowOrColumn(5, '3 1'),
                 'expected' => [
                     new Solution(1, 3, CellValue::SQUARE_FILLED),
                     new Solution(4, 4, CellValue::SQUARE_IGNORED),
@@ -56,7 +56,7 @@ class StandaloneHintStrategyTest extends TestCase
                 ],
             ],
             [
-                'input' => new RowOrColumn([0, 0, 0, 0, 0], '1 1 1'),
+                'input' => self::GetBlankRowOrColumn(5, '1 1 1'),
                 'expected' => [
                     new Solution(1, 1, CellValue::SQUARE_FILLED),
                     new Solution(2, 2, CellValue::SQUARE_IGNORED),
@@ -66,5 +66,15 @@ class StandaloneHintStrategyTest extends TestCase
                 ],
             ],
         ];
+    }
+
+    private static function GetBlankRowOrColumn(int $size, string $hints): RowOrColumn
+    {
+        $data = [];
+        for ($i = 1; $i <= $size; $i++) {
+            $data[] = 0;
+        }
+
+        return new RowOrColumn($data, $hints);
     }
 }

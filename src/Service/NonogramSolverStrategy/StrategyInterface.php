@@ -12,7 +12,7 @@ interface StrategyInterface
     public function supports($object, array $options): bool;
 
     /**
-     * @return ?array<Solution>
+     * @return array<Solution>
      */
-    public function tryToSolve(RowOrColumn $rowOrColumn, array $options): ?array;
+    public function tryToSolve(RowOrColumn $rowOrColumn, array $options): array;
 }
