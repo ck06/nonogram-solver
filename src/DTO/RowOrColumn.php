@@ -6,10 +6,12 @@ use App\DTO\Values\CellValue;
 
 class RowOrColumn
 {
+    private Board $board;
     private array $hints;
     private array $rowOrColumn = [];
+    private array $warnings = [];
 
-    public function __construct(array $rowOrColumnData, string $hintsForRowOrColumn)
+    public function __construct(array $rowOrColumnData, string $hintsForRowOrColumn, ?Board $board)
     {
         foreach ($rowOrColumnData as $pos => &$square) {
             $this->rowOrColumn[$pos] = &$square;
@@ -18,6 +20,7 @@ class RowOrColumn
         unset($square);
 
         $this->hints = explode(' ', $hintsForRowOrColumn);
+        $this->board = $board;
     }
 
     public function isSolved(): bool
@@ -31,15 +34,9 @@ class RowOrColumn
             && !in_array(CellValue::SQUARE_IGNORED->value, $this->rowOrColumn, true);
     }
 
-    public function markAsSolved(): self
+    public function getBoard(): ?Board
     {
-        foreach ($this->rowOrColumn as &$square) {
-            if ($square === CellValue::SQUARE_OPEN->value) {
-                $square = CellValue::SQUARE_IGNORED->value;
-            }
-        }
-
-        return $this;
+        return $this->board;
     }
 
     public function getData(): array
@@ -50,5 +47,17 @@ class RowOrColumn
     public function getHints(): array
     {
         return array_map(static fn($hint) => (int)$hint, $this->hints);
+    }
+
+    public function hasWarning(string $warning): bool
+    {
+        return in_array($warning, $this->warnings, true);
+    }
+
+    public function addWarning(string $warning): self
+    {
+        $this->warnings[$warning] = $warning;
+
+        return $this;
     }
 }

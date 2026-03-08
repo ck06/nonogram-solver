@@ -25,7 +25,7 @@ class Board
         $this->reset($this->height, $this->width);
 
         foreach ($array['data'] ?? [] as $rowNum => $row) {
-            $characters = explode('', $row);
+            $characters = str_split($row);
             foreach ($characters as $colNum => $character) {
                 // map the inputs to our internal values
                 $mappedCharacter = (match ((int)$character) {
@@ -34,7 +34,8 @@ class Board
                     2 => CellValue::SQUARE_IGNORED,
                 })->value;
 
-                $this->rows[$rowNum][$colNum] = $mappedCharacter;
+                // $colNum starts at 0, so we must not forget to add 1
+                $this->rows[$rowNum][$colNum+1] = $mappedCharacter;
             }
         }
     }
@@ -73,7 +74,7 @@ class Board
         $rows = [];
         $rowCount = count($this->rows);
         for ($i = 1; $i <= $rowCount; $i++) {
-            $rows[] = $this->getRow($i);
+            $rows[(string)$i] = $this->getRow($i);
         }
 
         return $rows;
@@ -83,7 +84,8 @@ class Board
     {
         return new RowOrColumn(
             $this->rows[(string)$rowNum],
-            $this->rowHints[(string)$rowNum]
+            $this->rowHints[(string)$rowNum],
+            $this,
         );
     }
 
@@ -95,7 +97,7 @@ class Board
         $columns = [];
         $columnCount = count($this->columns);
         for ($i = 1; $i <= $columnCount; $i++) {
-            $columns[] = $this->getColumn($i);
+            $columns[(string)$i] = $this->getColumn($i);
         }
 
         return $columns;
@@ -105,7 +107,8 @@ class Board
     {
         return new RowOrColumn(
             $this->columns[(string)$colNum],
-            $this->columnHints[(string)$colNum]
+            $this->columnHints[(string)$colNum],
+            $this,
         );
     }
 
@@ -167,6 +170,11 @@ class Board
     public function draw(): string
     {
         return BoardOutput::drawBoard($this);
+    }
+
+    public function drawWithHints(): string
+    {
+        return BoardOutput::drawBoard($this, true);
     }
 
     private function reset(?int $height, ?int $width): void

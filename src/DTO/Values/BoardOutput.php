@@ -131,8 +131,6 @@ enum BoardOutput: string
             $hintedCanvas .= " $hint " . trim($originalRow) . PHP_EOL;
         }
 
-        // remove the last line (just an empty newline) for cleaner output
-
         return $hintedCanvas;
     }
 }
