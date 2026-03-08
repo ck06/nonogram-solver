@@ -7,13 +7,17 @@ use App\DTO\RowOrColumn;
 use App\DTO\Solution;
 use App\DTO\Values\CellValue;
 use App\Service\NonogramSolverStrategy\StrategyCollection;
+use App\Service\NonogramSolverStrategy\StrategyOpenerCollection;
 
 class NonogramSolver
 {
     private Board $board;
+    private bool $triedOneTimeStrategies = false;
 
-    public function __construct(private StrategyCollection $strategies)
-    {
+    public function __construct(
+        private StrategyCollection $strategies,
+        private StrategyOpenerCollection $oneTimeStrategies,
+    ) {
     }
 
     public function solve(Board $board): Board
@@ -37,10 +41,33 @@ class NonogramSolver
 
     private function tryToSolve(): void
     {
+        // some strategies only need to be checked once. these will be
+        // handled separately to avoid excess calls in very big grids.
+        // additionally, they MUST be done first as other strategies
+        // may rely on the results of these one time strategies.
+        if (!$this->triedOneTimeStrategies) {
+            $this->tryOneTimeStrategies();
+            $this->triedOneTimeStrategies = true;
+        }
+
         foreach ([$this->board->getRows(), $this->board->getColumns()] as $rowsOrColumns) {
             /** @var RowOrColumn $rowOrColumn */
             foreach ($rowsOrColumns as $rowOrColumn) {
                 $solutions = $this->strategies->tryToSolve($rowOrColumn);
+                $this->applySolutions($rowOrColumn, $solutions);
+
+                # TODO - for debugging purposes, remove later
+                dump($this->board->drawWithHints());
+            }
+        }
+    }
+
+    private function tryOneTimeStrategies(): void
+    {
+        foreach ([$this->board->getRows(), $this->board->getColumns()] as $rowsOrColumns) {
+            /** @var RowOrColumn $rowOrColumn */
+            foreach ($rowsOrColumns as $rowOrColumn) {
+                $solutions = $this->oneTimeStrategies->trytoSolve($rowOrColumn);
                 $this->applySolutions($rowOrColumn, $solutions);
             }
         }
@@ -58,8 +85,6 @@ class NonogramSolver
                 $square = $solution->square->value;
             }
         }
-
-        dump($this->board->draw());
     }
 
     //////////////// TODO: convert all methods below here to strategies

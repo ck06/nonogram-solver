@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\Attribute\AsTaggedItem;
  * This strategy only looks at the associated hint and, if that hint matches the length exactly, fills it in.
  * It does not look at the contents of the row/column at all, that responsibility lies with another strategy.
  */
-#[AsTaggedItem(StrategyCollection::TAG_NAME, 100)]
+#[AsTaggedItem(StrategyOpenerCollection::TAG_NAME, 100)]
 class StandaloneHintStrategy implements StrategyInterface
 {
     public function supports($object, array $options): bool
