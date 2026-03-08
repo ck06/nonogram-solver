@@ -7,6 +7,8 @@ use App\DTO\Values\CellValue;
 use App\Service\NonogramSolver;
 use App\Service\NonogramSolverStrategy\StandaloneHintStrategy;
 use App\Service\NonogramSolverStrategy\StrategyCollection;
+use App\Service\NonogramSolverStrategy\StrategyOpenerCollection;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,20 +36,23 @@ use PHPUnit\Framework\TestCase;
  */
 class BoardTest extends TestCase
 {
+    private NonogramSolver $solver;
+
     public function setUp(): void
     {
         $this->solver = new NonogramSolver(
             new StrategyCollection(
-                [
-                    new StandaloneHintStrategy(),
-                ],
-            )
+                [],
+            ),
+            new StrategyOpenerCollection([
+                new StandaloneHintStrategy(),
+            ])
         );
     }
 
     public function testBoardDrawing(): void
     {
-        $board = new Board($this->dataProvider3x3()[0][0]);
+        $board = new Board(self::dataProvider3x3()[0][0]);
         $board->updateMultipleInRow(1, 1, 3, CellValue::SQUARE_FILLED);
         $board->updateCell(2, 1, CellValue::SQUARE_IGNORED);
         $board->updateCell(2, 2, CellValue::SQUARE_FILLED);
@@ -65,7 +70,6 @@ class BoardTest extends TestCase
 
         $actual = $board->draw();
         $this->assertSame(trim($expected), trim($actual));
-        dump($actual);
     }
 
     public function testRowAndColumnUpdateSimultaneously(): void
@@ -90,9 +94,7 @@ class BoardTest extends TestCase
         ], $board->getGrid());
     }
 
-    /**
-     * @dataProvider dataProvider3x3
-     */
+    #[DataProvider('dataProvider3x3')]
     public function testSolver3x3(string $input, array $expected): void
     {
         $solvedBoard = $this->solver->solve(new Board($input));
@@ -101,9 +103,7 @@ class BoardTest extends TestCase
         $this->assertSame($expected, $actual);
     }
 
-    /**
-     * @dataProvider dataProvider5x5
-     */
+    #[DataProvider('dataProvider5x5')]
     public function testSolver5x5(string $input, array $expected): void
     {
         $solvedBoard = $this->solver->solve(new Board($input));
@@ -121,7 +121,7 @@ class BoardTest extends TestCase
      *  │  ▇  │  ▇  │  ▇  │
      *  └―――――┴―――――┴―――――┘
      */
-    private function dataProvider3x3(): array
+    public static function dataProvider3x3(): array
     {
         $testData = [
             'height' => 3,
@@ -160,7 +160,7 @@ class BoardTest extends TestCase
      *  │  ▇  │  ᚷ  │  ▇  │  ᚷ  │  ▇  │
      *  └―――――┴―――――┴―――――┴―――――┴―――――┘
      */
-    private function dataProvider5x5(): array
+    public static function dataProvider5x5(): array
     {
         $testData = [
             'height' => 5,
