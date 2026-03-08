@@ -83,8 +83,8 @@ class Board
     public function getRow(int|string $rowNum): RowOrColumn
     {
         return new RowOrColumn(
-            $this->rows[(string)$rowNum],
-            $this->rowHints[(string)$rowNum],
+            $this->rows[(string)$rowNum] ?? [],
+            $this->rowHints[(string)$rowNum] ?? '',
             $this,
         );
     }
@@ -106,8 +106,8 @@ class Board
     public function getColumn(int|string $colNum): RowOrColumn
     {
         return new RowOrColumn(
-            $this->columns[(string)$colNum],
-            $this->columnHints[(string)$colNum],
+            $this->columns[(string)$colNum] ?? [],
+            $this->columnHints[(string)$colNum] ?? '',
             $this,
         );
     }

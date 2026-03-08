@@ -61,12 +61,19 @@ class PartialHintStrategy implements StrategyInterface
 
     private function solveMultiHint(RowOrColumn $rowOrColumn): array
     {
+        // TODO - does not work as intended, but probably caused by solveSingleHint
+        //        issues. check back after fixing the strategy-specific test.
+
+        $solutions = [];
         $hints = $rowOrColumn->getHints();
         foreach ($hints as $num => $hint) {
             [$leftOffset, $rightOffset] = $this->getOffsetForHintNumber($rowOrColumn, $num);
+            foreach($this->solveSingleHint($rowOrColumn, $hint, $leftOffset, $rightOffset) as $solution) {
+                $solutions[] = $solution;
+            }
         }
 
-        // TODO finish
+        return $solutions;
     }
 
     private function solveSingleHint(
