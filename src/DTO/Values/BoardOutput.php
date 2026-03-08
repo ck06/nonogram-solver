@@ -19,7 +19,7 @@ enum BoardOutput: string
     case OUTPUT_BORDER_CENTER = '┼';
     case OUTPUT_ERROR = '';
 
-    public static function drawBoard(Board $board): string
+    public static function drawBoard(Board $board, bool $includeHints = false): string
     {
         $width = 2 * $board->getWidth() + 1;
         $height = 2 * $board->getHeight() + 1;
@@ -63,6 +63,76 @@ enum BoardOutput: string
             $canvas .= PHP_EOL;
         }
 
+        if ($includeHints) {
+            return self::drawHints($board, $canvas);
+        }
+
         return $canvas;
+    }
+
+    # in a typical nonogram layout, the hints are...
+    # row => to the left
+    # col => at the top
+    #
+    # for this output we will assume a max width of 2-digit hints for the columns,
+    # leaving the first char blank if <10
+    public static function drawHints(Board $board, string $canvas): string
+    {
+        $rows = [];
+        $padding = 0;
+        foreach ($board->getRows() as $row) {
+            $rowHints = implode(' ', $row->getHints());
+            $padding = max($padding, strlen($rowHints));
+            $rows[] = $rowHints;
+        }
+
+        $maxColHints = 0;
+        foreach ($board->getColumns() as $column) {
+            $maxColHints = max(count($column->getHints()), $maxColHints);
+        }
+
+        $columnCanvas = array_fill(0, $maxColHints, '');
+        foreach ($board->getColumns() as $column) {
+            $hints = $column->getHints();
+            $offset = $maxColHints - count($hints);
+            for ($i = 0; $i < $maxColHints; $i++) {
+                $hintString = str_repeat(' ', 6);
+                if ($i >= $offset) {
+                    // we want our hint to be in the middle of the colum
+                    // since we include the left but exclude the right separator,
+                    // this means we'll have 2-3 spaces in front and 2 spaces behind.
+                    $hint = $hints[$i - $offset];
+                    $hintString = sprintf(
+                        '%s%d%s',
+                        $hint < 10 ? '   ' : '  ',
+                        $hint,
+                        '  ',
+                    );
+                }
+                $columnCanvas[$i] .= $hintString;
+            }
+        }
+
+        // now to put it all together
+        $hintedCanvas = '';
+        foreach ($columnCanvas as $columnRow) {
+            $hintedCanvas .= str_repeat(' ', $padding*3) . $columnRow . PHP_EOL;
+        }
+
+        $originalRows = explode(PHP_EOL, rtrim($canvas));
+        foreach ($originalRows as $i => $originalRow) {
+            // hints are on even rows - odd rows are separators.
+            // we -1 the $i to remove fuckiness with our modulo
+            $hint = str_repeat(' ', $padding);
+            if (--$i % 2 === 0) {
+                $hint = $rows[$i/2];
+            }
+
+            $hintedCanvas .= " $hint " . trim($originalRow) . PHP_EOL;
+        }
+
+        // remove the last line (just an empty newline) for cleaner output
+
+        return $hintedCanvas;
     }
 }
