@@ -48,8 +48,10 @@ class NonogramSolver
         if (!$this->triedOneTimeStrategies) {
             $this->tryOneTimeStrategies();
             $this->triedOneTimeStrategies = true;
+            dump("Board after applying one-time strategies: ", $this->board->drawWithHints());
         }
 
+        $board = $this->board->drawWithHints();
         foreach ([$this->board->getRows(), $this->board->getColumns()] as $rowsOrColumns) {
             /** @var RowOrColumn $rowOrColumn */
             foreach ($rowsOrColumns as $rowOrColumn) {
@@ -57,7 +59,10 @@ class NonogramSolver
                 $this->applySolutions($rowOrColumn, $solutions);
 
                 # TODO - for debugging purposes, remove later
-                dump($this->board->drawWithHints());
+                if ($board !== $this->board->drawWithHints()) {
+                    $board = $this->board->drawWithHints();
+                    dump($this->board->drawWithHints());
+                }
             }
         }
     }
