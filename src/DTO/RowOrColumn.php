@@ -6,13 +6,15 @@ use App\DTO\Values\CellValue;
 
 class RowOrColumn
 {
-    private Board $board;
     private array $hints;
     private array $rowOrColumn = [];
-    private array $warnings = [];
 
-    public function __construct(array $rowOrColumnData, string $hintsForRowOrColumn, ?Board $board)
-    {
+    public function __construct(
+        array $rowOrColumnData,
+        string $hintsForRowOrColumn,
+        private readonly Board $board,
+        private readonly ?self $original = null
+    ) {
         foreach ($rowOrColumnData as $pos => &$square) {
             $this->rowOrColumn[$pos] = &$square;
         }
@@ -20,7 +22,6 @@ class RowOrColumn
         unset($square);
 
         $this->hints = explode(' ', $hintsForRowOrColumn);
-        $this->board = $board;
     }
 
     public function isSolved(): bool
@@ -34,6 +35,10 @@ class RowOrColumn
             && !in_array(CellValue::SQUARE_IGNORED->value, $this->rowOrColumn, true);
     }
 
+    public function isOriginal(): bool {
+        return $this->original === null;
+    }
+
     public function getBoard(): Board
     {
         return $this->board;
@@ -44,20 +49,26 @@ class RowOrColumn
         return $this->rowOrColumn;
     }
 
+    /**
+     * Creates a copy of this row/column that's reversed (right-to-left or bottom-to-top)
+     * @return RowOrColumn
+     */
+    public function flip(): RowOrColumn
+    {
+        if ($this->original !== null) {
+            return $this->original;
+        }
+
+        return new self(
+            array_reverse($this->getData()),
+            strrev(implode(' ', $this->getHints())),
+            $this->getBoard(),
+            $this,
+        );
+    }
+
     public function getHints(): array
     {
         return array_map(static fn($hint) => (int)$hint, $this->hints);
-    }
-
-    public function hasWarning(string $warning): bool
-    {
-        return in_array($warning, $this->warnings, true);
-    }
-
-    public function addWarning(string $warning): self
-    {
-        $this->warnings[$warning] = $warning;
-
-        return $this;
     }
 }

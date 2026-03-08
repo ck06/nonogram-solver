@@ -5,6 +5,9 @@ namespace App\Tests\Unit;
 use App\DTO\Board;
 use App\DTO\Values\CellValue;
 use App\Service\NonogramSolver;
+use App\Service\NonogramSolverStrategy\CheckCompletedStrategy;
+use App\Service\NonogramSolverStrategy\FillTheGapStrategy;
+use App\Service\NonogramSolverStrategy\PartialHintStrategy;
 use App\Service\NonogramSolverStrategy\StandaloneHintStrategy;
 use App\Service\NonogramSolverStrategy\StrategyCollection;
 use App\Service\NonogramSolverStrategy\StrategyOpenerCollection;
@@ -42,7 +45,11 @@ class BoardTest extends TestCase
     {
         $this->solver = new NonogramSolver(
             new StrategyCollection(
-                [],
+                [
+                    new PartialHintStrategy(),
+                    new FillTheGapStrategy(),
+                    new CheckCompletedStrategy(),
+                ],
             ),
             new StrategyOpenerCollection([
                 new StandaloneHintStrategy(),
@@ -105,6 +112,15 @@ class BoardTest extends TestCase
 
     #[DataProvider('dataProvider5x5')]
     public function testSolver5x5(string $input, array $expected): void
+    {
+        $solvedBoard = $this->solver->solve(new Board($input));
+        $actual = $solvedBoard->getGrid();
+
+        $this->assertSame($expected, $actual);
+    }
+
+    #[DataProvider('dataProvider10x10')]
+    public function testSolver10x10(string $input, array $expected): void
     {
         $solvedBoard = $this->solver->solve(new Board($input));
         $actual = $solvedBoard->getGrid();
@@ -178,6 +194,87 @@ class BoardTest extends TestCase
             '3' => ['1' => 1, '2' => 1, '3' => 1, '4' => 1, '5' => 1],
             '4' => ['1' => 2, '2' => 1, '3' => 1, '4' => 1, '5' => 2],
             '5' => ['1' => 1, '2' => 2, '3' => 1, '4' => 2, '5' => 1],
+        ];
+
+        return [
+            [
+                json_encode($testData, JSON_THROW_ON_ERROR),
+                $solution,
+            ]
+        ];
+    }
+
+    /**
+     *                                                          1
+     *                            2                 2     3     1
+     *                      1     1     3     1     1     2     2
+     *          2     3     2     2     1     2     1     2     1    10
+     *       ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
+     *   2 2 │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ▇  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *   5 1 │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ▇  │  ▇  │  ▇  │  ▇  │  ᚷ  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *   1 4 │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ᚷ  │  ▇  │  ▇  │  ▇  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     * 4 1 1 │  ▇  │  ▇  │  ▇  │  ▇  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ᚷ  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *   2 1 │  ▇  │  ▇  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *   3 3 │  ᚷ  │  ▇  │  ▇  │  ▇  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ▇  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *     8 │  ᚷ  │  ᚷ  │  ▇  │  ▇  │  ▇  │  ▇  │  ▇  │  ▇  │  ▇  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *   1 1 │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *   2 1 │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ▇  │  ᚷ  │  ▇  │
+     *       ├―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┼―――――┤
+     *     3 │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ᚷ  │  ▇  │  ▇  │  ▇  │
+     *       └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
+     */
+    public static function dataProvider10x10(): array {
+        $testData = [
+            'height' => 10,
+            'width' => 10,
+            'hints' => [
+                'row' => [
+                    '1' => '2 2',
+                    '2' => '5 1',
+                    '3' => '1 4',
+                    '4' => '4 1 1',
+                    '5' => '2 1',
+                    '6' => '3 3',
+                    '7' => '8',
+                    '8' => '1 1',
+                    '9' => '2 1',
+                    '10' => '3',
+                ],
+                'column' => [
+                    '1' => '2',
+                    '2' => '3',
+                    '3' => '1 2',
+                    '4' => '2 1 2',
+                    '5' => '3 1',
+                    '6' => '1 2',
+                    '7' => '2 1 1',
+                    '8' => '3 2 2',
+                    '9' => '1 1 2 1',
+                    '10' => '10'
+                ],
+            ],
+            'data' => [],
+        ];
+
+        $solution = [
+            '1'  => ['1' => 2, '2' => 2, '3' => 2, '4' => 1, '5' => 1, '6' => 2, '7' => 2, '8' => 2, '9' => 1, '10' => 1],
+            '2'  => ['1' => 2, '2' => 2, '3' => 2, '4' => 1, '5' => 1, '6' => 1, '7' => 1, '8' => 1, '9' => 2, '10' => 1],
+            '3'  => ['1' => 2, '2' => 2, '3' => 2, '4' => 2, '5' => 1, '6' => 2, '7' => 1, '8' => 1, '9' => 1, '10' => 1],
+            '4'  => ['1' => 1, '2' => 1, '3' => 1, '4' => 1, '5' => 2, '6' => 2, '7' => 2, '8' => 1, '9' => 2, '10' => 1],
+            '5'  => ['1' => 1, '2' => 1, '3' => 2, '4' => 2, '5' => 2, '6' => 2, '7' => 2, '8' => 2, '9' => 2, '10' => 1],
+            '6'  => ['1' => 2, '2' => 1, '3' => 1, '4' => 1, '5' => 2, '6' => 2, '7' => 2, '8' => 1, '9' => 1, '10' => 1],
+            '7'  => ['1' => 2, '2' => 2, '3' => 1, '4' => 1, '5' => 1, '6' => 1, '7' => 1, '8' => 1, '9' => 1, '10' => 1],
+            '8'  => ['1' => 2, '2' => 2, '3' => 2, '4' => 2, '5' => 2, '6' => 1, '7' => 2, '8' => 2, '9' => 2, '10' => 1],
+            '9'  => ['1' => 2, '2' => 2, '3' => 2, '4' => 2, '5' => 2, '6' => 2, '7' => 1, '8' => 1, '9' => 2, '10' => 1],
+            '10' => ['1' => 2, '2' => 2, '3' => 2, '4' => 2, '5' => 2, '6' => 2, '7' => 2, '8' => 1, '9' => 1, '10' => 1],
         ];
 
         return [
