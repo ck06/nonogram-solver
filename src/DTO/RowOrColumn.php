@@ -34,7 +34,7 @@ class RowOrColumn
             && !in_array(CellValue::SQUARE_IGNORED->value, $this->rowOrColumn, true);
     }
 
-    public function getBoard(): ?Board
+    public function getBoard(): Board
     {
         return $this->board;
     }
