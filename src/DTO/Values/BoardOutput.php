@@ -116,7 +116,9 @@ enum BoardOutput: string
         // now to put it all together
         $hintedCanvas = '';
         foreach ($columnCanvas as $columnRow) {
-            $hintedCanvas .= str_repeat(' ', $padding*3) . $columnRow . PHP_EOL;
+            // $padding contains the max length of the row hints
+            // on top of this, we need 1 whitespace in either direction.
+            $hintedCanvas .= str_repeat(' ', $padding+2) . $columnRow . PHP_EOL;
         }
 
         $originalRows = explode(PHP_EOL, rtrim($canvas));
@@ -126,6 +128,7 @@ enum BoardOutput: string
             $hint = str_repeat(' ', $padding);
             if (--$i % 2 === 0) {
                 $hint = $rows[$i/2];
+                $hint = str_pad($hint, $padding, ' ', STR_PAD_LEFT);
             }
 
             $hintedCanvas .= " $hint " . trim($originalRow) . PHP_EOL;
