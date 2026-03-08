@@ -2,37 +2,35 @@
 
 namespace App\Tests\Unit;
 
-use App\DTO\RowOrColumn;
 use App\DTO\Solution;
 use App\DTO\Values\CellValue;
 use App\Service\NonogramSolverStrategy\PartialHintStrategy;
-use App\Service\NonogramSolverStrategy\StandaloneHintStrategy;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-class PartialHintStrategyTest extends TestCase
+class PartialHintStrategyTest extends RowOrColumnTestCase
 {
-    /** @dataProvider PartialHintStrategyDataProvider */
+    #[DataProvider('PartialHintStrategyDataProvider')]
     public function testPartialHintStrategy($input, $expected): void
     {
         $strategy = new PartialHintStrategy();
         $actual = $strategy->tryToSolve($input);
 
-        $this->assertEquals($expected, $actual);
+        self::assertEquals($expected, $actual);
     }
 
-    public function PartialHintStrategyDataProvider(): array
+    public static function PartialHintStrategyDataProvider(): array
     {
         return [
             [
                 // unable to solve
-                'input' => self::GetBlankRowOrColumn(5, '2'),
+                'input' => self::createBlankRowOrColumn(5, '2'),
                 'expected' => [],
             ],
             [
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │     │  ▇  │     │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => self::GetBlankRowOrColumn(5, '3'),
+                'input' => self::createBlankRowOrColumn(5, '3'),
                 'expected' => [
                     new Solution(3, 3, CellValue::SQUARE_FILLED),
                 ],
@@ -41,7 +39,7 @@ class PartialHintStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │  ▇  │  ▇  │  ▇  │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => self::GetBlankRowOrColumn(5, '4'),
+                'input' => self::createBlankRowOrColumn(5, '4'),
                 'expected' => [
                     new Solution(2, 4, CellValue::SQUARE_FILLED),
                 ],
@@ -50,7 +48,7 @@ class PartialHintStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │     │  ▇  │  ▇  │     │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => self::GetBlankRowOrColumn(6, '4'),
+                'input' => self::createBlankRowOrColumn(6, '4'),
                 'expected' => [
                     new Solution(3, 4, CellValue::SQUARE_FILLED),
                 ],
@@ -59,7 +57,7 @@ class PartialHintStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │  ▇  │  ▇  │     │     │  ▇  │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => self::GetBlankRowOrColumn(7, '3 2'),
+                'input' => self::createBlankRowOrColumn(7, '3 2'),
                 'expected' => [
                     new Solution(2, 3, CellValue::SQUARE_FILLED),
                     new Solution(6, 6, CellValue::SQUARE_FILLED),
@@ -75,7 +73,7 @@ class PartialHintStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │  ▇  │  ▇  │     │     │     │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => self::GetBlankRowOrColumn(7, '3'),
+                'input' => self::createBlankRowOrColumn(7, '3'),
                 'expected' => [
                     new Solution(3, 3, CellValue::SQUARE_FILLED),
                 ],
@@ -89,7 +87,7 @@ class PartialHintStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │     │     │     │  ▇  │  ▇  │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => new RowOrColumn([0, 0, 0, 0, 0, 1, 0], '3'),
+                'input' => self::createRowOrColumn([0, 0, 0, 0, 0, 1, 0], '3'),
                 'expected' => [
                     new Solution(5, 5, CellValue::SQUARE_FILLED),
                 ],
@@ -103,7 +101,7 @@ class PartialHintStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │  ▇  │  ▇  │  ▇  │  ▇  │  ᚷ  │     │  ▇  │  ▇  │     │  ᚷ  │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => new RowOrColumn([1, 0, 0, 0, 0, 0, 1, 0, 0, 0], '4 3'),
+                'input' => self::createRowOrColumn([1, 0, 0, 0, 0, 0, 1, 0, 0, 0], '4 3'),
                 'expected' => [
                     new Solution(2, 4, CellValue::SQUARE_FILLED),
                     new Solution(5, 5, CellValue::SQUARE_IGNORED),
@@ -111,15 +109,5 @@ class PartialHintStrategyTest extends TestCase
                 ],
             ],
         ];
-    }
-
-    private static function GetBlankRowOrColumn(int $size, string $hints): RowOrColumn
-    {
-        $data = [];
-        for ($i = 1; $i <= $size; $i++) {
-            $data[] = 0;
-        }
-
-        return new RowOrColumn($data, $hints);
     }
 }
