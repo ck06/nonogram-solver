@@ -2,30 +2,28 @@
 
 namespace App\Tests\Unit;
 
-use App\DTO\RowOrColumn;
 use App\DTO\Solution;
 use App\DTO\Values\CellValue;
 use App\Service\NonogramSolverStrategy\FillTheGapStrategy;
-use App\Service\NonogramSolverStrategy\StandaloneHintStrategy;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
-class FillTheGapStrategyTest extends TestCase
+class FillTheGapStrategyTest extends RowOrColumnTestCase
 {
-    /** @dataProvider FillTheGapStrategyDataProvider */
+    #[DataProvider('FillTheGapStrategyDataProvider')]
     public function testFillTheGapStrategy($input, $expected): void
     {
         $strategy = new FillTheGapStrategy();
         $actual = $strategy->tryToSolve($input);
 
-        $this->assertEquals($expected, $actual);
+        self::assertEquals($expected, $actual);
     }
 
-    public function FillTheGapStrategyDataProvider(): array
+    public static function FillTheGapStrategyDataProvider(): array
     {
         return [
             [
                 // Too small - should be skipped
-                'input' => [new RowOrColumn([0, 1, 0, 1, 0], '3')],
+                'input' => self::createRowOrColumn([0, 1, 0, 1, 0], '3'),
                 'expected' => [],
             ],
             [
@@ -37,7 +35,7 @@ class FillTheGapStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │  ▇  │  ▇  │  ▇  │  ▇  │     │     │     │     │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => [new RowOrColumn([0, 1, 0, 0, 1, 0, 0, 0, 0, 0], '5')],
+                'input' => self::createRowOrColumn([0, 1, 0, 0, 1, 0, 0, 0, 0, 0], '5'),
                 'expected' => [
                     new Solution(2, 5, CellValue::SQUARE_FILLED),
                 ],
@@ -51,7 +49,7 @@ class FillTheGapStrategyTest extends TestCase
                 // ┌―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┬―――――┐
                 // │     │  ▇  │     │  ▇  │  ▇  │  ▇  │  ▇  │  ▇  │     │     │
                 // └―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┴―――――┘
-                'input' => [new RowOrColumn([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], '1 5')],
+                'input' => self::createRowOrColumn([0, 1, 0, 1, 0, 1, 0, 1, 0, 0], '1 5'),
                 'expected' => [
                     new Solution(4, 8, CellValue::SQUARE_FILLED),
                 ],
